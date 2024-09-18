@@ -1,5 +1,5 @@
-import { Admin } from "../db/admin.model.js";
-import { Employee } from "../db/employee.model.js";
+import { Admin } from "../models/admin.models.js";
+import { Employee } from "../models/employee.models.js";
 import jwt from "jsonwebtoken";
 import { UploadOnCloudinary } from "../utils/cloudinary.js";
 export const SignUpController = async (req, res) => {
