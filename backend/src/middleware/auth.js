@@ -3,7 +3,7 @@ const AuthMiddleware = (req, res, next) => {
   // console.log(jwt);
   try {
     const authHeader = req.headers.authorization;
-    console.log(authHeader);
+    console.log("authHeader",authHeader);
     console.log(process.env.JWT_SECRET);
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(402).json({
@@ -12,7 +12,7 @@ const AuthMiddleware = (req, res, next) => {
     }
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log(decoded);
+    console.log("decoded",decoded);
     req.AdminId = decoded.AdminId;
     next();
   } catch (error) {

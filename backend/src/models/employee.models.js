@@ -23,12 +23,11 @@ const EmployeeSchema = mongoose.Schema(
       required: true,
     },
     course: {
-      type: String,
+      type: [String],
       required: true,
     },
     avatar: {
       type: String,
-      required: true,
     },
   },
   {

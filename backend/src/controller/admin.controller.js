@@ -29,13 +29,16 @@ export const SignInController = async (req, res) => {
   }
 
   const token = jwt.sign({ AdminId: AdminExists._id }, process.env.JWT_SECRET);
-  return res.status(200).json({ message: "Admin Signin Successfully", token });
+  return res
+    .status(200)
+    .json({ message: "Admin Signin Successfully", token, AdminExists });
 };
 
 export const CreateEmployeeController = async (req, res) => {
   const { name, email, mobile_No, designation, gender, course, avatar } =
     req.body;
   console.log("CreateEmployeeController");
+
   // Check if email exists
   const emailExist = await Employee.findOne({ email });
   if (emailExist) {
@@ -43,6 +46,7 @@ export const CreateEmployeeController = async (req, res) => {
       .status(409)
       .json({ message: "Employee with this email already exists" });
   }
+
   // Check if mobile number exists
   const mobileExist = await Employee.findOne({ mobile_No });
   if (mobileExist) {
@@ -51,40 +55,122 @@ export const CreateEmployeeController = async (req, res) => {
       .json({ message: "Employee with this mobile number already exists" });
   }
 
-  const avatarLocalPath = req.file?.path;
+  let avatarUpload = ""; // Declare and initialize avatarUpload
 
-  console.log("avatarLocalPath", avatarLocalPath);
-
-  if (!avatarLocalPath) {
-    return res.send("Select proper file to upload");
+  if (avatar) {
+    const avatarLocalPath = req.file?.path;
+    if (avatarLocalPath) {
+      avatarUpload = await UploadOnCloudinary(avatarLocalPath);
+    }
   }
 
-  const avatarUpload = await UploadOnCloudinary(avatarLocalPath);
-  console.log("avatarUpload", avatarUpload.url);
-
-  if (!avatarUpload) {
-    return res.send("Avatar file is required");
-  }
-
-  const createEmployee = await Employee.create({
+  const employee = await Employee.create({
     name,
     email,
     mobile_No,
     designation,
     gender,
     course,
-    avatar: avatarUpload.url,
+    avatar: avatarUpload?.url || "", // Assign the avatar URL or empty string if not provided
   });
+
+  const createdEmployee = await Employee.findById(employee._id).select(
+    "-updatedAt -__v -_id"
+  );
 
   return res.status(200).json({
     message: "Employee created successfully",
-    createEmployee
+    createdEmployee,
   });
 };
-export const UpdateEmployeeDetails = () => {};
-export const Logout = async (req, res) => {};
+
+export const UpdateEmployeeDetails = async (req, res) => {
+  const { name, email, mobile_No, designation, gender, course, avatar } =
+    req.body;
+
+  const EmployeeExist = await Employee.findOne({ email });
+  if (!EmployeeExist) {
+    return res.status(404).json({ message: "Employee does not exist" });
+  }
+
+  let avatarUpload = EmployeeExist.avatar; // Keep the existing avatar by default
+
+  if (avatar) {
+    const avatarLocalPath = req.file?.path;
+    if (avatarLocalPath) {
+      avatarUpload = await UploadOnCloudinary(avatarLocalPath);
+    }
+  }
+
+  const UpdatedEmployee = await Employee.findByIdAndUpdate(
+    EmployeeExist._id,
+    {
+      $set: {
+        name,
+        email,
+        mobile_No,
+        designation,
+        gender,
+        course,
+        avatar: avatarUpload?.url || EmployeeExist.avatar, // Update if new avatar, else keep the existing one
+      },
+    },
+    { new: true } // Option to return the updated document
+  );
+
+  return res.status(200).json({
+    message: "Employee updated successfully",
+    updatedEmployee: UpdatedEmployee,
+  });
+};
+
+export const EmployeeDelete = async (req, res) => {
+  try {
+    const { id } = req.params; // Access the employee id from req.params
+    console.log("Delete Employee Id", id);
+
+    // Use findByIdAndDelete to remove the employee
+    const employeeremove = await Employee.findByIdAndDelete(id);
+
+    if (!employeeremove) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    return res.status(200).json({ message: "Employee removed successfully" });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ message: "An error occurred while removing the employee" });
+  }
+};
 
 export const EmployeeList = async (req, res) => {
   const EmployeeList = await Employee.find({});
   return res.status(200).json({ EmployeeList });
+};
+
+export const EmployeeDetails = async (req, res) => {
+  const body = req.body;
+  console.log(body);
+  const { id } = req.query;
+  console.log("ID", id);
+  const employee = await Employee.findById(id);
+  if (!employee) {
+    return res.status(404).json({ message: "Employee does not exist" });
+  }
+  console.log(employee);
+  const EmployeeDetails = employee;
+  return res.status(200).json({ EmployeeDetails });
+};
+
+export const AdminDetails = async (req, res) => {
+  const { id } = req.query;
+  console.log(id);
+  const admin = await Admin.findById(id).select("username");
+  console.log("Admin", admin);
+  if (!admin) {
+    return res.status(404).json({ message: "Admin does not exist" });
+  }
+  return res.status(200).json({ admin });
 };

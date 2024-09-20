@@ -2,8 +2,14 @@ import "dotenv/config";
 import express from "express";
 import router from "./routes/index.js";
 import EstablishDBConnection from "./db/index.js";
+import cors from "cors";
 const app = express();
 const PORT = 3000;
+app.use(
+  cors({
+    origin: "*",
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
